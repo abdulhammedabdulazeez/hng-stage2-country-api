@@ -17,19 +17,17 @@ service = CountryService()
 # POST /countries/refresh - Refresh all countries from external APIs
 # ============================================================================
 
-@router("/countries/refresh", response_model=RefreshResponse,
+
+@router.api_route(
+    "/countries/refresh",
+    methods=["GET", "POST"],
+    response_model=RefreshResponse,
     status_code=status.HTTP_200_OK,
-    methods=["GET","POST"],
     responses={
-        503: {
-            "model": ErrorResponse,
-            "description": "External API unavailable"
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": "Internal server error"
-        }
-    } )
+        503: {"model": ErrorResponse, "description": "External API unavailable"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def refresh_countries(session: AsyncSession = Depends(get_session)):
 
     try:

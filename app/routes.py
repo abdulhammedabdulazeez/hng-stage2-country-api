@@ -17,8 +17,9 @@ service = CountryService()
 # POST /countries/refresh - Refresh all countries from external APIs
 # ============================================================================
 
-@router.post("/countries/refresh", response_model=RefreshResponse,
+@router("/countries/refresh", response_model=RefreshResponse,
     status_code=status.HTTP_200_OK,
+    methods=["GET","POST"],
     responses={
         503: {
             "model": ErrorResponse,

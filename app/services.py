@@ -182,11 +182,11 @@ class CountryService:
         refresh_time = datetime.now(UTC)
         await self.update_app_metadata(session, refresh_time)
 
-        # Get top 5 for image generation
-        top_countries = await self.get_top_countries_by_gdp(session, limit=5)
-
         # Commit all changes
         await session.commit()
+
+        # Get top 5 for image generation
+        top_countries = await self.get_top_countries_by_gdp(session, limit=5)
 
         # Generate summary image
         try:

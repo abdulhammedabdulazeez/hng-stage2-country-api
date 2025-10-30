@@ -3,8 +3,14 @@ from app.services import CountryService
 from app.database import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, status, HTTPException
-from app.schemas import RefreshResponse, ErrorResponse, CountryResponse, StatusResponse, CountryListResponse
-from typing import Optional
+from app.schemas import (
+    RefreshResponse,
+    ErrorResponse,
+    CountryResponse,
+    StatusResponse,
+    CountryListResponse,
+)
+from typing import Optional, List
 from fastapi.responses import FileResponse
 from pathlib import Path
 
@@ -35,16 +41,11 @@ async def refresh_countries(session: AsyncSession = Depends(get_session)):
         return RefreshResponse(
             message="Countries data refreshed successfully",
             total_countries=total,
-            last_refreshed_at=timestamp
+            last_refreshed_at=timestamp,
         )
     except Exception as e:
         error_msg = str(e)
-
-         # ADD THIS LINE TO SEE THE REAL ERROR
-        print(f"❌ ERROR in refresh_countries: {error_msg}")
-        import traceback
-        traceback.print_exc()
-
+        
         # Determine which API failed based on error message
         api_name = "external API"
         if "restcountries" in error_msg.lower():
@@ -65,24 +66,28 @@ async def refresh_countries(session: AsyncSession = Depends(get_session)):
 # GET /countries - Get all countries with optional filters and sorting
 # ============================================================================
 
-@router.get("/countries", response_model=CountryListResponse, responses={
-        500: {
-            "model": ErrorResponse,
-            "description": "Internal server error"
-        }
-    })
-async def get_countries( region: Optional[str] = None,
+
+@router.get(
+    "/countries",
+    response_model=List[CountryResponse],
+    responses={500: {"model": ErrorResponse, "description": "Internal server error"}},
+)
+async def get_countries(
+    region: Optional[str] = None,
     currency: Optional[str] = None,
     sort: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
 ):
 
     try:
-        countries = await service.get_countries_with_filters(session, region, currency, sort)
-        return CountryListResponse(
-            data=[CountryResponse.model_validate(c) for c in countries],
-            count=len(countries),
+        countries = await service.get_countries_with_filters(
+            session, region, currency, sort
         )
+        # return CountryListResponse(
+        #     data=[CountryResponse.model_validate(c) for c in countries],
+        #     count=len(countries),
+        # )
+        return [CountryResponse.model_validate(c) for c in countries]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -122,17 +127,15 @@ async def get_summary_image():
 # GET /countries/:name - Get a single country by name
 # ============================================================================
 
-@router.get("/countries/{name}", response_model=CountryResponse,  status_code=status.HTTP_200_OK,
+
+@router.get(
+    "/countries/{name}",
+    response_model=CountryResponse,
+    status_code=status.HTTP_200_OK,
     responses={
-        404: {
-            "model": ErrorResponse,
-            "description": "Country not found"
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": ErrorResponse, "description": "Country not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
 )
 async def get_country_by_name(name: str, session: AsyncSession = Depends(get_session)):
     try:
@@ -158,19 +161,14 @@ async def get_country_by_name(name: str, session: AsyncSession = Depends(get_ses
 # DELETE /countries/:name - Delete a country by name
 # ============================================================================
 
+
 @router.delete(
     "/countries/{name}",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        404: {
-            "model": ErrorResponse,
-            "description": "Country not found"
-        },
-        500: {
-            "model": ErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+        404: {"model": ErrorResponse, "description": "Country not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
 )
 async def delete_country(
     name: str,
@@ -199,16 +197,12 @@ async def delete_country(
 # GET /status - Get system status
 # ============================================================================
 
+
 @router.get(
     "/status",
     response_model=StatusResponse,
     status_code=status.HTTP_200_OK,
-    responses={
-        500: {
-            "model": ErrorResponse,
-            "description": "Internal server error"
-        }
-    }
+    responses={500: {"model": ErrorResponse, "description": "Internal server error"}},
 )
 async def get_status(session: AsyncSession = Depends(get_session)):
 
